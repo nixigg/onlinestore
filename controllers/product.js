@@ -23,7 +23,7 @@ exports.read = (req, res) => {
   return res.json(req.product)
 }
 
-
+// CREATE METHOD      
 exports.create = (req, res) => {
   let form = new formidable.IncomingForm()
   form.keepExtensions = true
@@ -66,7 +66,7 @@ exports.create = (req, res) => {
   })
 }
 
-// REMOVE
+// REMOVE METHOD
 exports.remove = (req, res) => {
   let product = req.product
   product.remove((err, deletedProduct) => {
@@ -77,6 +77,50 @@ exports.remove = (req, res) => {
     }
     res.json({
       "message": "Product deleted successfully"
+    })
+  })
+}
+
+// UPDATE METHOD
+exports.update = (req, res) => {
+  let form = new formidable.IncomingForm()
+  form.keepExtensions = true
+  form.parse(req, (err, fields, files) => {
+    if(err) {
+      return res.status(400).json({
+        error: "Image could not be uploaded"
+      })
+    }
+
+    // check for all fields
+    const {name, description, price, category, quantity, shipping} = fields
+    if(!name || !description || !price || !category || !quantity || !shipping) {
+      return res.status(400).json({
+        error: "All fields are required"
+      })
+    }
+
+    let product = req.product
+    product = _.extend(product, fields)
+
+    if(files.photo) {
+      //console.log('FILES PHOTO:', files.photo)
+      if(files.photo.size > 1000000) {
+        return res.status(400).json({
+          error: 'Image size should be less than 1mb'
+        })
+      }
+      product.photo.data = fs.readFileSync(files.photo.path)
+      product.photo.contentType = files.photo.type
+    }
+
+    product.save((err, result) => {
+      if(err) {
+        return res.status(400).json({
+          error: errorHandler(err)
+        })
+      }
+      res.json(result)
     })
   })
 }
